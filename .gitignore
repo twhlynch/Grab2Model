@@ -1,4 +1,6 @@
 *.blend*
 *.obj
+*.mtl
 *.json
 *.level
+__pycache__

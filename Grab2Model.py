@@ -1,4 +1,4 @@
-import bpy, os, argparse, json
+import bpy, os, sys, json
 from mathutils import Quaternion, Vector
 from google.protobuf import json_format
 from generated import types_pb2, level_pb2
@@ -136,21 +136,22 @@ def boolJoinAll():
     for obj in scene_objects[1:]:
         obj.delete()
 
-def main(level_file, join_objects):
+def main(level_file):
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete()
     with open(level_file, 'rb') as f:
         json_data = getLevelJson(f)
     nodes = json_data['levelNodes']
     for node in nodes:
         process_node(node)
-    if join_objects:
-        boolJoinAll()
-    bpy.ops.export_scene.obj(filepath=level_file[:4] + '.obj')
+    bpy.ops.export_scene.obj(filepath=level_file[:-5] + '.obj')
+    boolJoinAll()
+    bpy.ops.export_scene.obj(filepath=level_file[:-5] + '-joined.obj')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Convert Grab .level files into 3D models.")
-    parser.add_argument("level_file", help="Path to the .level file.")
-    parser.add_argument("--join-objects", action="store_true", help="Join all objects into one.")
+    if len(sys.argv) < 5:
+        print("Usage: blender --background --python level_to_obj.py <level_file>")
+        exit(1)
+    level_file = sys.argv[4]
 
-    args = parser.parse_args()
-
-    main(args.level_file, args.join_objects)
+    main(level_file)
