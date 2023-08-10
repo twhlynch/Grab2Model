@@ -134,7 +134,8 @@ def boolJoinAll():
         target_obj = scene_objects[0]
 
     for obj in scene_objects[1:]:
-        obj.delete()
+        if hasattr(obj, 'delete'):
+            obj.delete()
 
 def main(level_file):
     bpy.ops.object.select_all(action='SELECT')
@@ -144,9 +145,9 @@ def main(level_file):
     nodes = json_data['levelNodes']
     for node in nodes:
         process_node(node)
-    bpy.ops.export_scene.obj(filepath=level_file[:-5] + '.obj')
+    bpy.ops.export_scene.obj(filepath=level_file[:-6] + '.obj')
     boolJoinAll()
-    bpy.ops.export_scene.obj(filepath=level_file[:-5] + '-joined.obj')
+    bpy.ops.export_scene.obj(filepath=level_file[:-6] + '-joined.obj')
 
 if __name__ == "__main__":
     if len(sys.argv) < 5:

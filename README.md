@@ -8,3 +8,5 @@ Convert Grab levels into .obj files that you can use externally.
 - Copy `generated` folder into your blender install "Blender X.X\X.X\python\lib" folder
 - Run `pip install -r requirements.txt --target "C:\Program Files\Blender Foundation\Blender 3.6\3.6\python\lib"` replacing the target with your blender install
 - `blender --background --python Grab2Model.py <level_file>`
+
+> Note: level-joined.level will likely be scuffed as hell.
