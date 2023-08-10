@@ -137,7 +137,15 @@ def boolJoinAll():
         if hasattr(obj, 'delete'):
             obj.delete()
 
-def main(level_file):
+def export(file_path, export_type):
+    if export_type == 'fbx':
+        bpy.ops.export_scene.fbx(filepath=file_path + '.fbx')
+    elif export_type == 'stl':
+        bpy.ops.export_mesh.stl(filepath=file_path + '.stl')
+    else:
+        bpy.ops.export_scene.obj(filepath=file_path + '.obj')
+
+def main(level_file, export_type):
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete()
     with open(level_file, 'rb') as f:
@@ -145,14 +153,18 @@ def main(level_file):
     nodes = json_data['levelNodes']
     for node in nodes:
         process_node(node)
-    bpy.ops.export_scene.obj(filepath=level_file[:-6] + '.obj')
+    export(level_file[:-6], export_type)
     boolJoinAll()
-    bpy.ops.export_scene.obj(filepath=level_file[:-6] + '-joined.obj')
+    export(level_file[:-6] + '-joined', export_type)
 
 if __name__ == "__main__":
     if len(sys.argv) < 5:
-        print("Usage: blender --background --python level_to_obj.py <level_file>")
+        print("Usage: blender --background --python level_to_obj.py <level_file> <obj|fbx|stl>")
         exit(1)
+    if len(sys.argv) < 6:
+        export_type = 'obj'
+    else: 
+        export_type = sys.argv[5]
     level_file = sys.argv[4]
 
-    main(level_file)
+    main(level_file, export_type)
