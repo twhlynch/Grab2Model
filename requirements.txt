@@ -1,2 +1,2 @@
 mathutils
-protobuf
+protobuf==3.20.2
