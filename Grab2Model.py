@@ -3,19 +3,60 @@ from mathutils import Quaternion, Vector
 from google.protobuf import json_format
 from generated import types_pb2, level_pb2
 
+material_paths = [
+    "./materials/default.png",
+    "./materials/grabbable.png",
+    "./materials/ice.png",
+    "./materials/lava.png",
+    "./materials/wood.png"
+    "./materials/grapplable.png",
+    "./materials/grapplable_lava.png",
+    "./materials/grabbable_crumbling.png",
+    "./materials/default_colored.png",
+    "./materials/bouncing.png",
+]
+materials = []
+
+for path in material_paths:
+    material = bpy.data.materials.new(name=os.path.basename(path))
+    material.use_nodes = True
+
+    for node in material.node_tree.nodes:
+        material.node_tree.nodes.remove(node)
+
+    principled_node = material.node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
+    principled_node.location = (0, 0)
+
+    image_texture_node = material.node_tree.nodes.new(type='ShaderNodeTexImage')
+    image_texture_node.location = (-400, 0)
+    image_texture_node.image = bpy.data.images.load(path)
+
+    material.node_tree.links.new(principled_node.inputs['Base Color'], image_texture_node.outputs['Color'])
+
+    materials.append(material)
+
 def getLevelJson(data):
     level = level_pb2.Level()
     level.ParseFromString(data.read())
     return json_format.MessageToDict(level)
 
-def create_cube(position, rotation, scale, color):
-        bpy.ops.mesh.primitive_cube_add()
-        cube = bpy.context.object
+def create_object(position, rotation, scale, color, material, shape):
+    models = [
+        "./models/cube.glb",
+        "./models/sphere.glb",
+        "./models/cylinder.glb",
+        "./models/pyramid.glb",
+        "./models/prism.glb"
+    ]
+    bpy.ops.import_scene.gltf(filepath=models[shape-1000])  # Load the custom model
+    cube = bpy.context.selected_objects[0]
+    
+    cube.data.materials.append(materials[material])
 
-        cube.location = position
-        cube.rotation_mode = 'QUATERNION'
-        cube.rotation_quaternion = Quaternion(rotation)
-        cube.scale = scale
+    cube.location = position
+    cube.rotation_mode = 'QUATERNION'
+    cube.rotation_quaternion = Quaternion(rotation)
+    cube.scale = scale
 
 def process_node(node):
     if 'levelNodeStatic' in node:
@@ -45,8 +86,42 @@ def process_node(node):
         if 'color' not in static_node:
             static_node['color'] = {'r': 0, 'g': 0, 'b': 0}
         color = static_node.get('color', {'r': 0, 'g': 0, 'b': 0})
+        material = static_node.get('material', 0)
+        shape = static_node.get('shape', 1000)
 
-        create_cube(position, rotation, scale, color)
+        create_object(position, rotation, scale, color, material, shape)
+
+    elif 'levelNodeCrumbling' in node:
+        crumbling_node = node['levelNodeCrumbling']
+        if 'position' not in crumbling_node:
+            crumbling_node['position'] = {'x': 0, 'y': 0, 'z': 0}
+        position = Vector((
+            crumbling_node['position'].get('x', 0),
+            crumbling_node['position'].get('y', 0),
+            crumbling_node['position'].get('z', 0)
+        ))
+        if 'rotation' not in crumbling_node:
+            crumbling_node['rotation'] = {'w': 0, 'x': 0, 'y': 0, 'z': 0}
+        rotation = Quaternion((
+            crumbling_node['rotation'].get('w', 0),
+            crumbling_node['rotation'].get('x', 0),
+            crumbling_node['rotation'].get('y', 0),
+            crumbling_node['rotation'].get('z', 0)
+        ))
+        if 'scale' not in crumbling_node:
+            crumbling_node['scale'] = {'x': 0, 'y': 0, 'z': 0}
+        scale = Vector((
+            crumbling_node['scale'].get('x', 0)/2,
+            crumbling_node['scale'].get('y', 0)/2,
+            crumbling_node['scale'].get('z', 0)/2
+        ))
+        if 'color' not in crumbling_node:
+            crumbling_node['color'] = {'r': 0, 'g': 0, 'b': 0}
+        color = crumbling_node.get('color', {'r': 0, 'g': 0, 'b': 0})
+        material = crumbling_node.get('material', 0)
+        shape = crumbling_node.get('shape', 1000)
+
+        create_object(position, rotation, scale, color, material, shape)
 
     elif 'levelNodeGroup' in node:
         group_node = node['levelNodeGroup']
