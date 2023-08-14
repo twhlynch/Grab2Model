@@ -3,37 +3,19 @@ from mathutils import Quaternion, Vector
 from google.protobuf import json_format
 from generated import types_pb2, level_pb2
 
+main_path = os.path.dirname(os.path.realpath(__file__))
 material_paths = [
-    "./materials/default.png",
-    "./materials/grabbable.png",
-    "./materials/ice.png",
-    "./materials/lava.png",
-    "./materials/wood.png"
-    "./materials/grapplable.png",
-    "./materials/grapplable_lava.png",
-    "./materials/grabbable_crumbling.png",
-    "./materials/default_colored.png",
-    "./materials/bouncing.png",
+    main_path+"/materials/default.png",
+    main_path+"/materials/grabbable.png",
+    main_path+"/materials/ice.png",
+    main_path+"/materials/lava.png",
+    main_path+"/materials/wood.png",
+    main_path+"/materials/grapplable.png",
+    main_path+"/materials/grapplable_lava.png",
+    main_path+"/materials/grabbable_crumbling.png",
+    main_path+"/materials/default_colored.png",
+    main_path+"/materials/bouncing.png"
 ]
-materials = []
-
-for path in material_paths:
-    material = bpy.data.materials.new(name=os.path.basename(path))
-    material.use_nodes = True
-
-    for node in material.node_tree.nodes:
-        material.node_tree.nodes.remove(node)
-
-    principled_node = material.node_tree.nodes.new(type='ShaderNodeBsdfPrincipled')
-    principled_node.location = (0, 0)
-
-    image_texture_node = material.node_tree.nodes.new(type='ShaderNodeTexImage')
-    image_texture_node.location = (-400, 0)
-    image_texture_node.image = bpy.data.images.load(path)
-
-    material.node_tree.links.new(principled_node.inputs['Base Color'], image_texture_node.outputs['Color'])
-
-    materials.append(material)
 
 def getLevelJson(data):
     level = level_pb2.Level()
@@ -42,16 +24,48 @@ def getLevelJson(data):
 
 def create_object(position, rotation, scale, color, material, shape):
     models = [
-        "./models/cube.glb",
-        "./models/sphere.glb",
-        "./models/cylinder.glb",
-        "./models/pyramid.glb",
-        "./models/prism.glb"
+        main_path+"/models/cube.glb",
+        main_path+"/models/sphere.glb",
+        main_path+"/models/cylinder.glb",
+        main_path+"/models/pyramid.glb",
+        main_path+"/models/prism.glb"
     ]
-    bpy.ops.import_scene.gltf(filepath=models[shape-1000])  # Load the custom model
+    shape_words = ["cube", "sphere", "cylinder", "pyramid", "prism"]
+    material_words = ["default", "grabbable", "ice", "lava", "wood", "grapplable", "grapplable_lava", "grabbable_crumbling", "default_colored", "bouncing"]
+    if isinstance(shape, str):
+        shape = shape_words.index(shape.lower())+1000
+        
+    if isinstance(material, str):
+        material = material_words.index(material.lower())
+        
+    bpy.ops.import_scene.gltf(filepath=models[shape-1000])
     cube = bpy.context.selected_objects[0]
     
-    cube.data.materials.append(materials[material])
+    path = material_paths[material]
+    
+    node_material = bpy.data.materials.new(name="Material_" + path)
+    node_material.use_nodes = True
+
+    for node in node_material.node_tree.nodes:
+        node_material.node_tree.nodes.remove(node)
+
+    texture_node = node_material.node_tree.nodes.new(type='ShaderNodeTexImage')
+    texture_node.location = (200, 0)
+    texture = bpy.data.images.load(path)
+    texture_node.image = texture
+
+    diffuse_shader = node_material.node_tree.nodes.new(type='ShaderNodeBsdfDiffuse')
+    diffuse_shader.location = (0, 0)
+
+    material_output = node_material.node_tree.nodes.new(type='ShaderNodeOutputMaterial')
+    material_output.location = (400, 0)
+
+    node_material.node_tree.links.new(diffuse_shader.outputs['BSDF'], material_output.inputs['Surface'])
+    node_material.node_tree.links.new(texture_node.outputs['Color'], diffuse_shader.inputs['Color'])
+    
+    node_material.diffuse_color = (color.get('r', 0), color.get('g', 0), color.get('b', 0), 1)
+    
+    cube.data.materials.append(node_material)
 
     cube.location = position
     cube.rotation_mode = 'QUATERNION'
@@ -79,9 +93,9 @@ def process_node(node):
         if 'scale' not in static_node:
             static_node['scale'] = {'x': 0, 'y': 0, 'z': 0}
         scale = Vector((
-            static_node['scale'].get('x', 0)/2,
-            static_node['scale'].get('y', 0)/2,
-            static_node['scale'].get('z', 0)/2
+            static_node['scale'].get('x', 0),
+            static_node['scale'].get('y', 0),
+            static_node['scale'].get('z', 0)
         ))
         if 'color' not in static_node:
             static_node['color'] = {'r': 0, 'g': 0, 'b': 0}
@@ -111,9 +125,9 @@ def process_node(node):
         if 'scale' not in crumbling_node:
             crumbling_node['scale'] = {'x': 0, 'y': 0, 'z': 0}
         scale = Vector((
-            crumbling_node['scale'].get('x', 0)/2,
-            crumbling_node['scale'].get('y', 0)/2,
-            crumbling_node['scale'].get('z', 0)/2
+            crumbling_node['scale'].get('x', 0),
+            crumbling_node['scale'].get('y', 0),
+            crumbling_node['scale'].get('z', 0)
         ))
         if 'color' not in crumbling_node:
             crumbling_node['color'] = {'r': 0, 'g': 0, 'b': 0}
@@ -229,8 +243,8 @@ def main(level_file, export_type):
     for node in nodes:
         process_node(node)
     export(level_file[:-6], export_type)
-    boolJoinAll()
-    export(level_file[:-6] + '-joined', export_type)
+    # boolJoinAll()
+    # export(level_file[:-6] + '-joined', export_type)
 
 if __name__ == "__main__":
     if len(sys.argv) < 5:
