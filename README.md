@@ -2,6 +2,7 @@
 
 Convert Grab levels into 3d model files that you can use externally.
 
+- Install python 3.10+
 - Install Blender and add it to path
 - Update `generated` folder from [Slin/GRAB-Level-Format](https://github.com/Slin/GRAB-Level-Format/tree/main) (main/tools/generated)
 - Copy `generated` folder into your blender install "Blender X.X\X.X\python\lib" folder
