@@ -174,10 +174,14 @@ def process_node(node):
             if 'rotation' not in child_node:
                 child_node['rotation'] = {'w': 0, 'x': 0, 'y': 0, 'z': 0}
             child_rotation = Quaternion((
-                group_rotation[i] + child_node['rotation'].get('w', 0) if i == 0 else child_node['rotation'].get('x', 0) if i == 1 else
-                child_node['rotation'].get('y', 0) if i == 2 else child_node['rotation'].get('z', 0)
-                for i in range(4)
-            ))
+                # group_rotation[i] + child_node['rotation'].get('w', 0) if i == 0 else child_node['rotation'].get('x', 0) if i == 1 else
+                # child_node['rotation'].get('y', 0) if i == 2 else child_node['rotation'].get('z', 0)
+                # for i in range(4)
+                child_node['rotation'].get('w', 0),
+                child_node['rotation'].get('x', 0),
+                child_node['rotation'].get('y', 0),
+                child_node['rotation'].get('z', 0)
+            )) * group_rotation
             if 'scale' not in child_node:
                 child_node['scale'] = {'x': 0, 'y': 0, 'z': 0}
             child_scale = Vector((
@@ -194,7 +198,9 @@ def process_node(node):
                     'position': {'x': child_position[0], 'y': child_position[1], 'z': child_position[2]},
                     'rotation': {'w': child_rotation[0], 'x': child_rotation[1], 'y': child_rotation[2], 'z': child_rotation[3]},
                     'scale': {'x': child_scale[0], 'y': child_scale[1], 'z': child_scale[2]},
-                    'color': {'r': child_color['r'], 'g': child_color['g'], 'b': child_color['b']}
+                    'color': {'r': child_color['r'], 'g': child_color['g'], 'b': child_color['b']},
+                    'shape': child_node.get('shape', 1000),
+                    'material': child_node.get('material', 0)
                 }
             }
 
